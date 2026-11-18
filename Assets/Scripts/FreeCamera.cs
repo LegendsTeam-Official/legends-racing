@@ -19,10 +19,14 @@ namespace Legends
         // UI rects in screen pixels (GUI space: y down)
         Rect upBtn, downBtn, speedBtn;
 
-        void Start()
+        public static bool CarAvailable;
+        Rect carBtn;
+
+        void OnEnable()
         {
             var e = transform.eulerAngles; yaw = e.y; pitch = e.x > 180 ? e.x - 360 : e.x;
-            circle = MakeCircle(128);
+            moveFinger = lookFinger = -1; moveVec = Vector2.zero;
+            if (circle == null) circle = MakeCircle(128);
         }
 
         static Texture2D MakeCircle(int s)
@@ -49,6 +53,7 @@ namespace Legends
             upBtn = new Rect(Screen.width - m - s, Screen.height - m - 2 * s - U * 2, s, s);
             downBtn = new Rect(Screen.width - m - s, Screen.height - m - s, s, s);
             speedBtn = new Rect(Screen.width - m - s, m, s, s * 0.6f);
+            carBtn = new Rect(3f * U, 8f * U, 12f * U, 7f * U);
         }
 
         static Vector2 GuiPos(Vector2 touch) => new Vector2(touch.x, Screen.height - touch.y);
@@ -67,6 +72,7 @@ namespace Legends
                 if (t.phase == TouchPhase.Began)
                 {
                     if (speedBtn.Contains(g)) { speedIndex = (speedIndex + 1) % speeds.Length; continue; }
+                    if (CarAvailable && carBtn.Contains(g)) { CarInput.OnToggleFlyRequested?.Invoke(); return; }
                     if (upBtn.Contains(g) || downBtn.Contains(g)) continue;
                     if (t.position.x < Screen.width * 0.45f && moveFinger < 0) { moveFinger = t.fingerId; moveOrigin = t.position; moveVec = Vector2.zero; }
                     else if (lookFinger < 0) { lookFinger = t.fingerId; lastLook = t.position; }
@@ -90,6 +96,7 @@ namespace Legends
             move += new Vector3(moveVec.x, 0, moveVec.y);
 
             // ---- keyboard / mouse ----
+            if (CarAvailable && Input.GetKeyDown(KeyCode.F)) { CarInput.OnToggleFlyRequested?.Invoke(); return; }
             if (Input.GetKey(KeyCode.W)) move.z += 1;
             if (Input.GetKey(KeyCode.S)) move.z -= 1;
             if (Input.GetKey(KeyCode.D)) move.x += 1;
@@ -149,6 +156,14 @@ namespace Legends
                 GUI.Box(speedBtn, GUIContent.none);
                 GUI.Label(speedBtn, "x" + (speedIndex + 1), st);
             }
+            if (CarAvailable)
+            {
+                var st2 = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = (int)(3 * U), fontStyle = FontStyle.Bold };
+                GUI.color = new Color(0.1f, 0.12f, 0.16f, 0.55f);
+                GUI.DrawTexture(carBtn, circle, ScaleMode.StretchToFill);
+                GUI.color = Color.white;
+                GUI.Label(carBtn, "CAR", st2);
+            }
             GUI.color = old;
         }
     }
@@ -169,7 +184,7 @@ namespace Legends
             st.normal.textColor = new Color(1, 1, 1, 0.75f);
             GUI.Label(new Rect(3 * u, 2 * u, 60 * u, 5 * u), $"{fps:0} FPS", st);
             if (!Application.isMobilePlatform)
-                GUI.Label(new Rect(3 * u, 6 * u, 90 * u, 5 * u), "WASD/QE move · RMB look · wheel speed", st);
+                GUI.Label(new Rect(3 * u, 16 * u, 90 * u, 5 * u), "WASD drive · F fly · WASD/QE + RMB fly", st);
         }
     }
 }

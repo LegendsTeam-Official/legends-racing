@@ -4,12 +4,12 @@ using UnityEditor;
 using UnityEngine;
 
 // Generates all procedural textures as PNGs (run once from ProjectSetup).
-public static class TextureGen
+public static partial class TextureGen
 {
     public const string Dir = "Assets/Generated/Textures";
 
     // ---------- noise ----------
-    static float Hash(int x, int y, int seed)
+    internal static float Hash(int x, int y, int seed)
     {
         unchecked
         {
@@ -43,7 +43,7 @@ public static class TextureGen
     }
 
     // ---------- io ----------
-    static void Save(string name, Color[] px, int w, int h, bool linear, bool normal = false, int aniso = 4)
+    internal static void Save(string name, Color[] px, int w, int h, bool linear, bool normal = false, int aniso = 4)
     {
         Directory.CreateDirectory(Dir);
         var t = new Texture2D(w, h, TextureFormat.RGBA32, false, linear);
@@ -66,7 +66,7 @@ public static class TextureGen
         imp.SaveAndReimport();
     }
 
-    static Color[] NormalFromHeight(float[] hgt, int w, int h, float strength)
+    internal static Color[] NormalFromHeight(float[] hgt, int w, int h, float strength)
     {
         var n = new Color[w * h];
         for (int y = 0; y < h; y++)
@@ -80,8 +80,8 @@ public static class TextureGen
         return n;
     }
 
-    static float SmoothStep(float a, float b, float x) { x = Mathf.Clamp01((x - a) / (b - a)); return x * x * (3 - 2 * x); }
-    static float Box(float x, float a, float b, float soft) => SmoothStep(a - soft, a + soft, x) * (1 - SmoothStep(b - soft, b + soft, x));
+    internal static float SmoothStep(float a, float b, float x) { x = Mathf.Clamp01((x - a) / (b - a)); return x * x * (3 - 2 * x); }
+    internal static float Box(float x, float a, float b, float soft) => SmoothStep(a - soft, a + soft, x) * (1 - SmoothStep(b - soft, b + soft, x));
 
     public static void GenerateAll()
     {
@@ -90,6 +90,7 @@ public static class TextureGen
         Facade("facade_brick", new Color(0.29f, 0.15f, 0.11f), 1, 23);
         Facade("facade_stone", new Color(0.42f, 0.38f, 0.32f), 2, 37);
         Shop();
+        GenerateWorld();
         Glow(); Streak(); Splash();
         AssetDatabase.Refresh();
     }
@@ -99,13 +100,17 @@ public static class TextureGen
     {
         float u = um / tu, v = vm / tv;
         int cu = Mathf.Max(1, Mathf.RoundToInt(tu * 6)), cv = Mathf.Max(1, Mathf.RoundToInt(tv * 6));
-        float grain = Fbm(u, v, cu * 8, cv * 8, 2, seed);
+        float grain = Fbm(u, v, cu * 16, cv * 16, 2, seed);
         float patches = Fbm(u, v, Mathf.Max(1, cu / 3), Mathf.Max(1, cv / 3), 4, seed + 7);
-        alb = 0.075f + grain * 0.035f + (patches - 0.5f) * 0.05f;
-        hgt = grain * 0.6f + patches * 0.2f;
+        // tar-sealed cracks: thin dark lines where a ridged noise is near zero
+        float crackN = Fbm(u, v, Mathf.Max(1, cu / 2), Mathf.Max(1, cv / 2), 3, seed + 31);
+        float crack = 1f - SmoothStep(0.0f, 0.012f, Mathf.Abs(crackN - 0.5f));
+        crack *= SmoothStep(0.45f, 0.6f, Fbm(u, v, Mathf.Max(1, cu / 4), Mathf.Max(1, cv / 4), 2, seed + 41));
+        alb = 0.08f + grain * 0.025f + (patches - 0.5f) * 0.04f - crack * 0.04f;
+        hgt = grain * 0.25f + patches * 0.1f - crack * 0.2f;
         // puddles: low-frequency mask, sharpened
         float pm = Fbm(u, v, Mathf.Max(1, Mathf.RoundToInt(tu / 2.5f)), Mathf.Max(1, Mathf.RoundToInt(tv / 2.5f)), 4, seed + 99);
-        puddle = SmoothStep(0.56f, 0.62f, pm);
+        puddle = SmoothStep(0.58f, 0.64f, pm);
     }
 
     static void Road()
@@ -143,13 +148,13 @@ public static class TextureGen
                 alb[y * w + x] = c;
                 float sm = Mathf.Lerp(0.58f, 0.66f, track);
                 sm = Mathf.Lerp(sm, 0.42f, Mathf.Max(mk, yel));
-                sm = Mathf.Lerp(sm, 0.97f, pud);
+                sm = Mathf.Lerp(sm, 0.9f, pud);
                 mask[y * w + x] = new Color(0, 0, 0, sm);
                 hg[y * w + x] = Mathf.Lerp(ht + Mathf.Max(mk, yel) * 0.6f, 0.35f, pud);
             }
         Save("road_albedo", alb, w, h, false);
         Save("road_mask", mask, w, h, true);
-        Save("road_normal", NormalFromHeight(hg, w, h, 2.2f), w, h, true, true);
+        Save("road_normal", NormalFromHeight(hg, w, h, 0.9f), w, h, true, true);
     }
 
     static void Intersection()
@@ -167,19 +172,19 @@ public static class TextureGen
                 if (inU && (vm < 3.2f || vm > S - 3.2f) && (vm > 0.4f && vm < S - 0.4f)) zebra = Box(Mathf.Repeat(um - 1f, 1.2f), 0f, 0.6f, 0.01f);
                 if (inV && (um < 3.2f || um > S - 3.2f) && (um > 0.4f && um < S - 0.4f)) zebra = Mathf.Max(zebra, Box(Mathf.Repeat(vm - 1f, 1.2f), 0f, 0.6f, 0.01f));
                 if ((um < 3.2f || um > S - 3.2f) && (vm < 3.2f || vm > S - 3.2f)) zebra = 0;
-                zebra *= SmoothStep(0.25f, 0.45f, wear);
+                zebra = 0f;
                 Color c = new Color(a, a, a * 1.03f);
                 c = Color.Lerp(c, new Color(0.7f, 0.7f, 0.68f), zebra);
                 c *= Mathf.Lerp(1f, 0.55f, pud);
                 alb[y * w + x] = c;
                 float sm = Mathf.Lerp(0.6f, 0.42f, zebra);
-                sm = Mathf.Lerp(sm, 0.97f, pud);
+                sm = Mathf.Lerp(sm, 0.9f, pud);
                 mask[y * w + x] = new Color(0, 0, 0, sm);
                 hg[y * w + x] = Mathf.Lerp(ht + zebra * 0.6f, 0.35f, pud);
             }
         Save("inter_albedo", alb, w, h, false);
         Save("inter_mask", mask, w, h, true);
-        Save("inter_normal", NormalFromHeight(hg, w, h, 2.2f), w, h, true, true);
+        Save("inter_normal", NormalFromHeight(hg, w, h, 0.9f), w, h, true, true);
     }
 
     static void Sidewalk()

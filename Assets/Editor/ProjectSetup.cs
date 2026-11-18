@@ -12,7 +12,7 @@ using UnityEngine.Rendering.Universal;
 // Headless project setup + builds. Run with:
 //   Unity -batchmode -projectPath . -executeMethod ProjectSetup.SetupAll -quit
 //   Unity -batchmode -projectPath . -executeMethod ProjectSetup.BuildAndroid -quit
-public static class ProjectSetup
+public static partial class ProjectSetup
 {
     const string MatDir = "Assets/Resources/Materials";
     const string ScenePath = "Assets/Scenes/Main.unity";
@@ -53,9 +53,9 @@ public static class ProjectSetup
     }
 
     // ---------- materials ----------
-    static Texture2D Tex(string n) => AssetDatabase.LoadAssetAtPath<Texture2D>($"{TextureGen.Dir}/{n}.png");
+    internal static Texture2D Tex(string n) => AssetDatabase.LoadAssetAtPath<Texture2D>($"{TextureGen.Dir}/{n}.png");
 
-    static Material Save(Material m, string name)
+    internal static Material Save(Material m, string name)
     {
         Directory.CreateDirectory(MatDir);
         string path = $"{MatDir}/{name}.mat";
@@ -65,7 +65,7 @@ public static class ProjectSetup
         return m;
     }
 
-    static Material Lit(string name, Color col, float smooth, float metal = 0f, string albedo = null, string mask = null, string normal = null,
+    internal static Material Lit(string name, Color col, float smooth, float metal = 0f, string albedo = null, string mask = null, string normal = null,
                         string emission = null, float emissionIntensity = 0f, Color? emissionColor = null)
     {
         var m = new Material(Shader.Find("Universal Render Pipeline/Lit"));
@@ -98,7 +98,7 @@ public static class ProjectSetup
         return saved;
     }
 
-    static Material Custom(string shader, string name, string tex, Color col, float intensity)
+    internal static Material Custom(string shader, string name, string tex, Color col, float intensity)
     {
         var m = new Material(Shader.Find(shader));
         if (tex != null) m.SetTexture("_MainTex", Tex(tex));
@@ -112,10 +112,9 @@ public static class ProjectSetup
         Lit("Road", Color.white, 1f, 0f, "road_albedo", "road_mask", "road_normal");
         Lit("Intersection", Color.white, 1f, 0f, "inter_albedo", "inter_mask", "inter_normal");
         Lit("Sidewalk", Color.white, 1f, 0f, "sidewalk_albedo", "sidewalk_mask", "sidewalk_normal");
-        Lit("Ground", new Color(0.05f, 0.05f, 0.055f), 0.75f);
         foreach (var f in new[] { ("FacadeConcrete", "facade_concrete"), ("FacadeBrick", "facade_brick"), ("FacadeStone", "facade_stone") })
             Lit(f.Item1, Color.white, 1f, 0f, f.Item2 + "_albedo", f.Item2 + "_mask", f.Item2 + "_normal", f.Item2 + "_emission", 2.2f);
-        Lit("Shop", Color.white, 1f, 0f, "shop_albedo", "shop_mask", "shop_normal", "shop_emission", 1.4f);
+        Lit("Shop", Color.white, 1f, 0f, "shop_albedo", "shop_mask", "shop_normal", "shop_emission", 0.75f);
         Lit("Roof", Color.white, 0.25f, 0f, "roof_albedo");
         Lit("Metal", new Color(0.22f, 0.22f, 0.23f), 0.45f, 0.3f);
         Lit("Wood", new Color(0.16f, 0.10f, 0.07f), 0.3f);
@@ -132,6 +131,7 @@ public static class ProjectSetup
         Custom("Legends/HaloBillboard", "Halo", "glow", new Color(1f, 0.7f, 0.42f), 0.75f);
         Custom("Legends/Additive", "Rain", "streak", new Color(0.7f, 0.75f, 0.85f), 0.3f);
         Custom("Legends/Additive", "Splash", "splash", new Color(0.8f, 0.82f, 0.9f), 0.35f);
+        CreateWorldMaterials();
         var sky = new Material(Shader.Find("Legends/NightSky"));
         Save(sky, "Sky");
     }

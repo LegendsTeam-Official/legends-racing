@@ -21,10 +21,12 @@ namespace Legends
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
 
             Atmosphere();
-            var city = new GameObject("City").AddComponent<CityGenerator>();
+            var city = new GameObject("World").AddComponent<WorldGenerator>();
             city.Generate(seed);
+            city.gameObject.AddComponent<WaterAnimator>();
 
             var cam = CreateCamera(city.SpawnPoint, city.SpawnForward);
+            SetupCar(cam);
             new GameObject("LampLights").AddComponent<LampLightPool>().Init(city.LampHeads, cam.transform);
             new GameObject("Rain").AddComponent<RainFX>().Init(cam.transform);
             new GameObject("RainAudio").AddComponent<RainAudio>();
@@ -36,6 +38,57 @@ namespace Legends
 
             string shots = ShotDir();
             if (shots != null) StartCoroutine(ShotRoutine(shots, cam.transform));
+        }
+
+        GameObject car; CarCamera carCam; FreeCamera flyCam;
+        static readonly Vector3 CarSpawn = new Vector3(3.5f, 0.05f, 100f);
+
+        void SetupCar(Camera cam)
+        {
+            car = CarSetup.Spawn(CarSpawn, Quaternion.identity);
+            if (car == null) return;
+            // glTF transmission glass renders blown-out in URP: use dark tinted glass instead
+            var glass = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = "CarGlass" };
+            glass.SetColor("_BaseColor", new Color(0.015f, 0.018f, 0.022f));
+            glass.SetFloat("_Smoothness", 0.96f);
+            glass.SetFloat("_Metallic", 0.1f);
+            foreach (var mr in car.GetComponentsInChildren<Renderer>())
+            {
+                var ms = mr.sharedMaterials;
+                bool changed = false;
+                for (int i = 0; i < ms.Length; i++) if (ms[i] != null && ms[i].name.StartsWith("Glass")) { ms[i] = glass; changed = true; }
+                if (changed) mr.sharedMaterials = ms;
+            }
+            flyCam = cam.GetComponent<FreeCamera>();
+            carCam = cam.gameObject.AddComponent<CarCamera>();
+            carCam.target = car.transform;
+            carCam.Snap();
+            flyCam.enabled = false;
+            FreeCamera.CarAvailable = true;
+            CarInput.OnToggleFlyRequested = ToggleFly;
+        }
+
+        void ToggleFly()
+        {
+            bool fly = !flyCam.enabled;
+            var input = car.GetComponent<CarInput>();
+            if (input != null) input.enabled = !fly;
+            carCam.enabled = !fly;
+            flyCam.enabled = fly;
+            if (!fly) carCam.Snap();
+        }
+
+        void Update()
+        {
+            // fell into the river or off the map: put the car back on the avenue
+            if (car != null && (car.transform.position.y < -1.2f || Mathf.Abs(car.transform.position.x) > 1100f || Mathf.Abs(car.transform.position.z) > 1100f))
+            {
+                var rb = car.GetComponent<Rigidbody>();
+                rb.linearVelocity = Vector3.zero; rb.angularVelocity = Vector3.zero;
+                rb.position = CarSpawn + Vector3.up * 0.3f; rb.rotation = Quaternion.identity;
+                car.transform.SetPositionAndRotation(CarSpawn + Vector3.up * 0.3f, Quaternion.identity);
+                if (carCam != null && carCam.enabled) carCam.Snap();
+            }
         }
 
         void Atmosphere()
@@ -89,13 +142,18 @@ namespace Legends
         {
             Directory.CreateDirectory(dir);
             var fc = cam.GetComponent<FreeCamera>(); fc.enabled = false;
-            float c = 0f; float lc = (CityGenerator.Lines / 2 - (CityGenerator.Lines - 1) * 0.5f) * CityGenerator.Pitch;
+            yield return new WaitForSeconds(3f);
+            ScreenCapture.CaptureScreenshot(Path.Combine(dir, "shot_car.png"));
+            for (int f = 0; f < 4; f++) yield return null;
+            var ccam = cam.GetComponent<CarCamera>(); if (ccam != null) ccam.enabled = false;
             var poses = new List<(Vector3 p, Vector3 e)>
             {
-                (new Vector3(lc - 3.5f, 2.4f, -150f), new Vector3(4f, 0f, 0f)),   // street level down the avenue
-                (new Vector3(lc + 6f, 1.4f, -110f), new Vector3(2f, -25f, 0f)),   // low, across the road toward shops
-                (new Vector3(lc - 40f, 60f, -260f), new Vector3(18f, 20f, 0f)),   // elevated overview
-                (new Vector3(lc - 3.5f, 2.4f, 60f), new Vector3(3f, 180f, 0f)),   // other direction
+                (new Vector3(-3.5f, 2.4f, 100f), new Vector3(4f, 0f, 0f)),          // downtown avenue
+                (new Vector3(-700f, 2.2f, 150f), new Vector3(3f, 5f, 0f)),          // residential street
+                (new Vector3(-2f, 3.0f, -545f), new Vector3(6f, 80f, 0f)),          // bridge, looking along the river
+                (new Vector3(-235f, 2.0f, -330f), new Vector3(5f, 160f, 0f)),       // park fountain
+                (new Vector3(-420f, 180f, -820f), new Vector3(22f, 32f, 0f)),       // overview
+                (new Vector3(-150f, 2.2f, -255f), new Vector3(3f, 95f, 0f)),        // ring boulevard
             };
             yield return new WaitForSeconds(2f);
             for (int i = 0; i < poses.Count; i++)
@@ -184,6 +242,7 @@ namespace Legends
             probe.nearClipPlane = 0.5f;
             probe.farClipPlane = 900f;
             probe.importance = 1;
+            probe.intensity = 0.7f;
             probe.clearFlags = ReflectionProbeClearFlags.Skybox;
             probe.cullingMask = ~(1 << 2); // skip Ignore Raycast (rain)
             Refresh();
