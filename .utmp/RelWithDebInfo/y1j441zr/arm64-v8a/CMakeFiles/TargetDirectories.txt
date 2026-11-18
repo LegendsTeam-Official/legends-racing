@@ -1,0 +1,8 @@
+/home/claude/legends-racing/.utmp/RelWithDebInfo/y1j441zr/arm64-v8a/CMakeFiles/edit_cache.dir
+/home/claude/legends-racing/.utmp/RelWithDebInfo/y1j441zr/arm64-v8a/CMakeFiles/rebuild_cache.dir
+/home/claude/legends-racing/.utmp/RelWithDebInfo/y1j441zr/arm64-v8a/GameActivity/CMakeFiles/game.dir
+/home/claude/legends-racing/.utmp/RelWithDebInfo/y1j441zr/arm64-v8a/GameActivity/CMakeFiles/edit_cache.dir
+/home/claude/legends-racing/.utmp/RelWithDebInfo/y1j441zr/arm64-v8a/GameActivity/CMakeFiles/rebuild_cache.dir
+/home/claude/legends-racing/.utmp/RelWithDebInfo/y1j441zr/arm64-v8a/FramePacing/CMakeFiles/swappywrapper.dir
+/home/claude/legends-racing/.utmp/RelWithDebInfo/y1j441zr/arm64-v8a/FramePacing/CMakeFiles/edit_cache.dir
+/home/claude/legends-racing/.utmp/RelWithDebInfo/y1j441zr/arm64-v8a/FramePacing/CMakeFiles/rebuild_cache.dir

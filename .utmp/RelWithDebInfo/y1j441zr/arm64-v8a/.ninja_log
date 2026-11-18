@@ -1,0 +1,12 @@
+# ninja log v5
+8	1840	1795027205644614521	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	9da6426b27018738
+12	2060	1795027205864614534	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	37a0ad9b7c0afca1
+0	2897	1795027206700614584	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	5110183970f8d481
+1840	3487	1795027207296614620	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	64155f3461e0e37
+2897	4305	1795027208108614668	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	618c07c6d390d582
+2060	4440	1795027208240614676	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	71fe8012fdfd72cc
+4440	4633	1795027208436614687	FramePacing/CMakeFiles/swappywrapper.dir/UnitySwappyWrapper.cpp.o	a647bcd9c28c4daa
+4633	4731	1795027208536614693	/home/claude/legends-racing/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/y1j441zr/obj/arm64-v8a/libswappywrapper.so	245dba39d762399f
+3487	5019	1795027208820614710	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	105368a280feef32
+4305	5711	1795027209512614751	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	ce6323901de977b2
+5711	5740	1795027209548614753	/home/claude/legends-racing/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/y1j441zr/obj/arm64-v8a/libgame.so	591228fce7a422bc

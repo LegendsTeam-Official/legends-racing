@@ -19,7 +19,7 @@
 ## Сборка (headless)
 ```bash
 Unity -batchmode -nographics -projectPath . -executeMethod ProjectSetup.SetupAll -quit     # текстуры, материалы, сцена
-Unity -batchmode -nographics -projectPath . -executeMethod ProjectSetup.BuildAndroid -quit # Builds/LegendsRacing.apk
+tools/build_apk.sh                                                                      # Builds/LegendsRacing.apk
 Unity -batchmode -nographics -projectPath . -executeMethod ProjectSetup.BuildLinux -quit   # для скриншотов
 ./Builds/linux/LegendsRacing.x86_64 -legendsShots /tmp/shots                              # 4 кадра и выход
 ```
